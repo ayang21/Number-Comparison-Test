@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Number comparison experiment</title>
+    <script src="https://unpkg.com/jspsych@7.3.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.2"></script>
+    <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css"/>
+  </head>
+  <body></body>
+  <script type="module">
+    import experimentConfig from './config.js';
+    import consent from './consent.js';
+    import {exampleStimArray, stimArray} from './stim.js';
+    import debrief from './debrief.js';
+
+    const jsPsych = initJsPsych({
+      on_finish: function() {
+        jsPsych.data.displayData();
+      }
+    });
+    
+    var timeline = [];
+    
+    var welcome = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: consent + '<p>Press spacebar to continue.</p>',
+      choices: [' ']
+    };
+    
+    timeline.push(welcome);
+    
+    var instructions_1 = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `
+        <p>In our experiment, you will be shown a fraction, and then after a pause, you will be shown a second fraction, and it is your task to determine if the two fractions are equal to each other or not. </br> </br> Press <strong style = "color: red;">Y</strong> if they are matching fractions. Press  <strong style = "color: red">N</strong> if they are not matching fractions. </p>
+        <p>Press <strong style = "color: red;">Y</strong> to continue.</p>
+      `,
+      choices: ['y']
+    };
+    
+    timeline.push(instructions_1);
+    
+    var instructions_2 = {
+      timeline: [
+
+        //Continue to example message
+        {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: `
+            <p>Press <strong style = "color: red;">Y</strong> to continue to the example</p>
+          `,
+          choices: ['y']
+        },
+
+        //ITI fixation for 1000ms
+        {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: '<div class="fixation" style = "font-size: 50px;">---</div>',
+          choices: 'NO_KEYS',
+          trial_duration: 1000
+        },
+
+        //Probe for 1000 ms
+        {
+          type: jsPsychHtmlKeyboardResponse,
+
+          //Insert random stimulus from the exampleStimArray array from stim.js
+          stimulus: function(){
+              let example_num = exampleStimArray[Math.floor(Math.random() * (exampleStimArray.length))].example_1;
+              example_num = '<div class="stimulus">' + example_num + '</div>';
+              return example_num;
+          },
+          choices: 'NO_KEYS',
+          trial_duration: 1000
+        },
+
+        //ISI fixation for 500ms
+        {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: '<div class="fixation" style = "font-size: 50px;">---</div>',
+          choices: 'NO_KEYS',
+          trial_duration: 500
+        },
+
+        //Target message and wait for user response
+        {
+          type: jsPsychHtmlKeyboardResponse,
+
+          //Insert random stimulus from the exampleStimArray array from stim.js
+          stimulus: function () {
+              let example_num = exampleStimArray[Math.floor(Math.random() * (exampleStimArray.length))].example_2;
+              example_num = '<div class="stimulus">' + example_num + '</div>';
+              return example_num;
+          },
+          choices: ['y', 'n'],
+          
+          //Record the response
+          data: {
+              match: jsPsych.timelineVariable('match')
+          },
+
+          //on_finish function to determine if the response was correct or not
+          on_finish: function (data) {
+            if (data.match) {
+              data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'y');
+            } else {
+              data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'n');
+            }
+          }
+        },
+
+        //Timeline variable to display if the previous response was correct or not
+        {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function () {
+            let last_correct = jsPsych.data.getLastTrialData().values()[0].correct;
+            if (last_correct) {
+              return '<div class="fixation correct" style = "color: green;">Good Job!</div>';
+            } else {
+              return '<div class="fixation incorrect" style = "color: red;">Almost</div>';
+            }
+          },
+          choices: 'NO_KEYS',
+          trial_duration: 2000
+        },
+
+        //Ending message that asks if the user is ready to continue to the experiment or if they wish to redo the trial
+        {
+          timeline:[
+            {
+              type: jsPsychHtmlKeyboardResponse,
+              stimulus: `
+                <p>If you are ready now, press <strong style = "color: red;">Y</strong> to continue to the experiment</p>
+                <p>Or, if you want to redo the trial, press <strong style = "color: red;">N</strong></p>
+              `,
+              choices: ['y', 'n']
+            }
+          ],
+        },
+      ],
+      randomize_order: true,
+
+      //loop_function to loop back to the beginning of the instructions if the user presses 'n'
+      loop_function: function(data){
+        if(jsPsych.pluginAPI.compareKeys(data.trials[6].response,'n')){
+          return true;
+        } else {
+          return false;
+        }
+      },
+      
+    };
+    
+    timeline.push(instructions_2);
+
+    //Message stating that the actual experiment is going to start now
+    var starting_message = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `
+        <div><strong>The experiment is now going to start.</strong></div>
+      `,
+      choices: "NO_KEYS",
+      trial_duration: 1000
+    };
+
+    //Experiment timeline
+    var lexical_decision_procedure = {
+      timeline: [
+
+          //ITI fixation for 1000ms
+          {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<div class="fixation" style = "font-size: 50px;">---</div>',
+            choices: 'NO_KEYS',
+            trial_duration: 1000
+          },
+
+          //Probe for 1000 ms
+          {
+            type: jsPsychHtmlKeyboardResponse,
+            
+            //Probe word
+            stimulus: function(){
+              let first_word = jsPsych.timelineVariable('num_1');
+              first_word = '<div class="stimulus">' + first_word + '</div>';
+              return first_word;
+            },
+            choices: 'NO_KEYS',
+            trial_duration: 1000
+          },
+
+          //ISI fixation for 500ms
+          {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<div class="fixation" style = "font-size: 50px;">---</div>',
+            choices: 'NO_KEYS',
+            trial_duration: 500
+          },
+
+          //Target message and wait for user response
+          {
+            type: jsPsychHtmlKeyboardResponse,
+            //Target word
+            stimulus: function () {
+              let second_word = jsPsych.timelineVariable('num_2');
+              second_word = '<div class="stimulus">' + second_word + '</div>';
+              return second_word;
+            },
+            choices: ['y', 'n'],
+            data: {
+                match: jsPsych.timelineVariable('match')
+            },
+
+            //on_finish function to determine if the response was correct or not
+            on_finish: function (data) {
+              if (data.match) {
+                data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'y');
+              } else {
+                data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'n');
+              }
+            }
+          },
+
+          //Timeline variable to display if the previous response was correct or not
+          {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function () {
+              let last_correct = jsPsych.data.getLastTrialData().values()[0].correct;
+              if (experimentConfig.correctiveFeedback == 'true') {
+                if (last_correct) {
+                  return '<div class="fixation correct" style = "color: green;">Good Job!</div>';
+                } else {
+                  return '<div class="fixation incorrect" style = "color: red;">Almost</div>';
+                }
+              } else {
+                return '<div class="fixation" style = "font-size: 50px;"></div>';
+              }
+            },
+            choices: 'NO_KEYS',
+            trial_duration: 2000
+          }
+      ],
+      timeline_variables: stimArray,
+      randomize_order: true
+    };
+  
+    timeline.push(lexical_decision_procedure);
+  
+    //Calculuate all the data and display it to the user
+    var data_summary = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function () {
+        // Calculate performance on task
+        console.log(jsPsych.data.get())
+        let correct_match = jsPsych.data.get().filter({ match: true, correct: true }).count();
+        let total_match = jsPsych.data.get().filter({ match: true }).count();
+        let mean_rt_match = jsPsych.data.get().filter({ match: true, correct: true }).select('rt').mean();
+        
+        let correct_mismatch = jsPsych.data.get().filter({ match: false, correct: true }).count();
+        let total_mismatch = jsPsych.data.get().filter({ match: false }).count();
+        let mean_rt_mismatch = jsPsych.data.get().filter({ match: false, correct: true }).select('rt').mean();
+        
+
+        // Show results and debrief
+        let results = `<p>You were correct on ${correct_match} of ${total_match} match word pairings!
+          Your average correct response time for these was ${Math.round(mean_rt_match)} milliseconds.</p>
+          <p>For mismatch word pairings, you were correct on ${correct_mismatch} of ${total_mismatch}!
+          Your average correct response time for these was ${Math.round(mean_rt_mismatch)} milliseconds.</p>`
+        return results + debrief
+      },
+      choices: 'NO_KEYS'
+    };
+    
+    timeline.push(data_summary);
+
+    jsPsych.run(timeline);
+  </script>
+</html>
