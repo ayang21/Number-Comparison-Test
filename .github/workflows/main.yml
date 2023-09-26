@@ -11,8 +11,11 @@ jobs:
       - uses: actions/github-script@v6
         with:
           script: |
-            // Get a list of all issues created by the PR opener
-            // See: https://octokit.github.io/rest.js/#pagination
+            // Determine if the event was an issue or a pull request
+            const eventType = context.payload.action === 'opened' ? 'issue' : 'pull request';
+            console.log(eventType)
+            
+            // Get a list of all issues created by the user
             const creator = context.payload.sender.login
             const opts = github.rest.issues.listForRepo.endpoint.merge({
               ...context.issue,
@@ -26,7 +29,7 @@ jobs:
                 continue
               }
 
-              if (issue.pull_request) {
+              if (issue.pull_request || issue.issue) {
                 return // Creator is already a contributor.
               }
             }
