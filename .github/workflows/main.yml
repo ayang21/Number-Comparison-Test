@@ -23,13 +23,13 @@ jobs:
               state: 'all'
             })
             const issues = await github.paginate(opts)
-            console.log(issues)
             for (const issue of issues) {
               if (issue.number === context.issue.number) {
                 continue
               }
 
               if (issue.pull_request || issue.issue) {
+                console.log(issue)
                 return // Creator is already a contributor.
               }
             }
