@@ -23,7 +23,7 @@ jobs:
               state: 'all'
             })
             const issues = await github.paginate(opts)
-
+            console.log(issues)
             for (const issue of issues) {
               if (issue.number === context.issue.number) {
                 continue
