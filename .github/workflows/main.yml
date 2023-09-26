@@ -1,4 +1,8 @@
-on: pull_request_target
+on: 
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
 
 jobs:
   welcome:
