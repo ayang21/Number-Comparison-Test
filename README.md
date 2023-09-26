@@ -4,4 +4,4 @@ Sets up a number comparison trial where you will be prompted two fractions, and 
 
 This experiment is setup using JsPsych due to their flexible and structured framework for online experiments like this one. 
 
-@2023 Adam Yang. https://www.linkedin.com/in/adam-yang-4us/
+@2023 Adam Yang. https://www.linkedin.com/in/adamyang25/
