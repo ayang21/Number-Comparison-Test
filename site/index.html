@@ -8,10 +8,9 @@
   </head>
   <body></body>
   <script type="module">
-    import experimentConfig from '../config.js';
-    import consent from '../consent.js';
-    import {exampleStimArray, stimArray} from '../stim.js';
-    import debrief from '../debrief.js';
+    import experimentConfig from '../site/config.js';
+    import consent from '../site/consent.js';
+    import debrief from '../site/debrief.js';
 
     const jsPsych = initJsPsych({
       on_finish: function() {
@@ -19,23 +18,28 @@
       }
     });
     
+// --------Timeline Begin----------- //
+
     var timeline = [];
-    
+    var match_array = [];
+    // Welcome message
     var welcome = {
       type: jsPsychHtmlKeyboardResponse,
-      stimulus: consent + '<p>Press spacebar to continue.</p>',
+      stimulus: consent + '<p>Press <strong style = "color: red;">spacebar</strong> to continue.</p>',
       choices: [' ']
     };
     
     timeline.push(welcome);
-    
+      
+// --------Instrucion Begin----------- //
+  
     var instructions_1 = {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: `
-        <p>In our experiment, you will be shown a fraction, and then after a pause, you will be shown a second fraction, and it is your task to determine if the two fractions are equal to each other or not. </br> </br> Press <strong style = "color: red;">Y</strong> if they are matching fractions. Press  <strong style = "color: red">N</strong> if they are not matching fractions. </p>
-        <p>Press <strong style = "color: red;">Y</strong> to continue.</p>
+        <p>In our experiment, you will be shown a fraction, and then after a pause, you will be shown a second fraction, and it is your task to determine if the two fractions are equal to each other or not. </br> </br> Press <strong style = "color: red;">F</strong> if they are not matching fractions. Press  <strong style = "color: red">J</strong> if they are matching fractions. </p>
+        <p>Press <strong style = "color: red;">J</strong> to continue.</p>
       `,
-      choices: ['y']
+      choices: ['j']
     };
     
     timeline.push(instructions_1);
@@ -47,9 +51,9 @@
         {
           type: jsPsychHtmlKeyboardResponse,
           stimulus: `
-            <p>Press <strong style = "color: red;">Y</strong> to continue to the example</p>
+            <p>Press <strong style = "color: red;">J</strong> to continue to the example</p>
           `,
-          choices: ['y']
+          choices: ['j']
         },
 
         //ITI fixation for 1000ms
@@ -66,9 +70,11 @@
 
           //Insert random stimulus from the exampleStimArray array from stim.js
           stimulus: function(){
-              let example_num = exampleStimArray[Math.floor(Math.random() * (exampleStimArray.length))].example_1;
-              example_num = '<div class="stimulus">' + example_num + '</div>';
-              return example_num;
+            let numerator = (Math.floor(Math.random() * 2) + 1)
+            let denominator = (Math.floor(Math.random() * 2) + 1)
+            let example_num = '<div class = top>' + numerator + '</div>' + '<hr style = "height: .25rem; width: 2rem; border-width: 0; background-color: black;">'  + '<div class = bottom>' + denominator + '</div>';
+            match_array[0] = (numerator/denominator);
+            return example_num;
           },
           choices: 'NO_KEYS',
           trial_duration: 1000
@@ -88,23 +94,22 @@
 
           //Insert random stimulus from the exampleStimArray array from stim.js
           stimulus: function () {
-              let example_num = exampleStimArray[Math.floor(Math.random() * (exampleStimArray.length))].example_2;
-              example_num = '<div class="stimulus">' + example_num + '</div>';
-              return example_num;
+            let numerator = (Math.floor(Math.random() * 2) + 1)
+            let denominator = (Math.floor(Math.random() * 2) + 1)
+            let example_num = '<div class = top>' + numerator + '</div>' + '<hr style = "height: .25rem; width: 2rem; border-width: 0; background-color: black;">'  + '<div class = bottom>' + denominator + '</div>'; 
+            
+            //Calculate if the fraction is a match or not and store it in match_array[1]
+            match_array[1] = (numerator/denominator) == match_array[0];
+            return example_num;
           },
-          choices: ['y', 'n'],
-          
-          //Record the response
-          data: {
-              match: jsPsych.timelineVariable('match')
-          },
+          choices: ['f', 'j'],
 
           //on_finish function to determine if the response was correct or not
           on_finish: function (data) {
-            if (data.match) {
-              data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'y');
+            if (match_array[1]) {
+              data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'j');
             } else {
-              data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'n');
+              data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'f');
             }
           }
         },
@@ -114,6 +119,7 @@
           type: jsPsychHtmlKeyboardResponse,
           stimulus: function () {
             let last_correct = jsPsych.data.getLastTrialData().values()[0].correct;
+            console.log(last_correct)
             if (last_correct) {
               return '<div class="fixation correct" style = "color: green;">Good Job!</div>';
             } else {
@@ -130,43 +136,48 @@
             {
               type: jsPsychHtmlKeyboardResponse,
               stimulus: `
-                <p>If you are ready now, press <strong style = "color: red;">Y</strong> to continue to the experiment</p>
-                <p>Or, if you want to redo the trial, press <strong style = "color: red;">N</strong></p>
+                <p>If you are ready now, press <strong style = "color: red;">J</strong> to continue to the experiment</p>
+                <p>Or, if you want to redo the trial, press <strong style = "color: red;">F</strong></p>
               `,
-              choices: ['y', 'n']
+              choices: ['f', 'j']
             }
-          ],
+          ],  
         },
       ],
       randomize_order: true,
 
-      //loop_function to loop back to the beginning of the instructions if the user presses 'n'
+      //loop_function to loop back to the beginning of the instructions if the user presses 'F'
       loop_function: function(data){
-        if(jsPsych.pluginAPI.compareKeys(data.trials[6].response,'n')){
+        if(jsPsych.pluginAPI.compareKeys(data.trials[6].response,'f')){
           return true;
         } else {
           return false;
         }
       },
       
+      
     };
     
     timeline.push(instructions_2);
+
+// --------Instrucion End----------- //
+
+
+// --------Experiment Begin----------- //
 
     //Message stating that the actual experiment is going to start now
     var starting_message = {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: `
         <div><strong>The experiment is now going to start.</strong></div>
+        <p>Press <strong style = "color: red;">J</strong> to start the new block</p>
       `,
-      choices: "NO_KEYS",
-      trial_duration: 1000
+      choices: ["j"],
     };
-
-    //Experiment timeline
+    
+    //Experiment timeline 
     var lexical_decision_procedure = {
       timeline: [
-
           //ITI fixation for 1000ms
           {
             type: jsPsychHtmlKeyboardResponse,
@@ -181,9 +192,13 @@
             
             //Probe word
             stimulus: function(){
-              let first_word = jsPsych.timelineVariable('num_1');
-              first_word = '<div class="stimulus">' + first_word + '</div>';
-              return first_word;
+              let numerator = (Math.floor(Math.random() * 10) + 1)
+              let denominator = (Math.floor(Math.random() * 10) + 1)              
+              let stim_word = '<div class = top>' + numerator + '</div>' + '<hr style = "height: .25rem; width: 2rem; border-width: 0; background-color: black;">'  + '<div class = bottom>' + denominator + '</div>';
+              match_array[0] = (numerator/denominator);
+              match_array[3] = numerator;
+              match_array[4] = denominator;
+              return stim_word;
             },
             choices: 'NO_KEYS',
             trial_duration: 1000
@@ -202,50 +217,42 @@
             type: jsPsychHtmlKeyboardResponse,
             //Target word
             stimulus: function () {
-              let second_word = jsPsych.timelineVariable('num_2');
-              second_word = '<div class="stimulus">' + second_word + '</div>';
-              return second_word;
+              let numerator = (Math.floor(Math.random() * 10) + 1)
+              let denominator = (Math.floor(Math.random() * 10) + 1)
+              if(Math.random() < 0.5){
+                numerator = match_array[3]*2;
+                denominator = match_array[4]*2;
+              }
+              else if((numerator/denominator) == match_array[0]){
+                numerator += 1;
+                denominator -= 1;
+              }
+              let target_word = '<div class = top>' + numerator + '</div>' + '<hr style = "height: .25rem; width: 2rem; border-width: 0; background-color: black;">'  + '<div class = bottom>' + denominator + '</div>';
+              
+            //Calculate if the fraction is a match or not and store it in match_array[1]
+              match_array[1] = (numerator/denominator) == match_array[0];
+              return target_word;
             },
-            choices: ['y', 'n'],
-            data: {
-                match: jsPsych.timelineVariable('match')
-            },
+            choices: ['f', 'j'],
 
             //on_finish function to determine if the response was correct or not
             on_finish: function (data) {
-              if (data.match) {
-                data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'y');
+              if (match_array[1]) {
+                data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'j');
               } else {
-                data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'n');
+                data.correct = jsPsych.pluginAPI.compareKeys(data.response, 'f');
               }
+              data.match = match_array[1];
             }
           },
-
-          //Timeline variable to display if the previous response was correct or not
-          {
-            type: jsPsychHtmlKeyboardResponse,
-            stimulus: function () {
-              let last_correct = jsPsych.data.getLastTrialData().values()[0].correct;
-              if (experimentConfig.correctiveFeedback == 'true') {
-                if (last_correct) {
-                  return '<div class="fixation correct" style = "color: green;">Good Job!</div>';
-                } else {
-                  return '<div class="fixation incorrect" style = "color: red;">Almost</div>';
-                }
-              } else {
-                return '<div class="fixation" style = "font-size: 50px;"></div>';
-              }
-            },
-            choices: 'NO_KEYS',
-            trial_duration: 2000
-          }
       ],
-      timeline_variables: stimArray,
-      randomize_order: true
+      repetitions: 6
     };
-  
-    timeline.push(lexical_decision_procedure);
-  
+    for(let i = 0; i < 10; i++){
+      timeline.push(starting_message, lexical_decision_procedure);
+    }
+// --------Experiment End----------- //
+
     //Calculuate all the data and display it to the user
     var data_summary = {
       type: jsPsychHtmlKeyboardResponse,
