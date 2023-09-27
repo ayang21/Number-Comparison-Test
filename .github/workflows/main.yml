@@ -1,3 +1,5 @@
+name: Welcome
+
 on: 
   issues:
     types: [opened]
@@ -8,37 +10,15 @@ jobs:
   welcome:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v6
+      - uses: actions/checkout@v3
+      - uses: actions/first-interaction@main
         with:
-          script: |
-            // Determine if the event was an issue or a pull request
-            const eventType = context.payload.action === 'opened' ? 'issue' : 'pull request';
-            console.log(eventType)
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            Hello! Thank you for filing an issue.
+
+            If this is a bug report, please include relevant logs to help us debug the problem.
+          pr-message: |
+            Hello! Thank you for your contribution.
             
-            // Get a list of all issues created by the user
-            const creator = context.payload.sender.login
-            const opts = github.rest.issues.listForRepo.endpoint.merge({
-              ...context.issue,
-              creator,
-              state: 'all'
-            })
-            const issues = await github.paginate(opts)
-            for (const issue of issues) {
-              if (issue.number === context.issue.number) {
-                continue
-              }
-
-              if (issue.pull_request || issue.issue) {
-                console.log(issue)
-                return // Creator is already a contributor.
-              }
-            }
-
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `**Welcome**, new contributor!
-
-                Please make sure you've read our [contributing guide](CONTRIBUTING.md) and we look forward to reviewing your Pull request shortly ✨`
-            })
+            If you are fixing a bug, please reference the issue number in the description
